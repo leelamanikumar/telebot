@@ -1,0 +1,17 @@
+{
+  "name": "telegram-file-storage-bot",
+  "version": "1.0.0",
+  "description": "A Telegram bot for file storage and sharing",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "mongoose": "^7.0.0",
+    "node-telegram-bot-api": "^0.61.0"
+  }
+}
