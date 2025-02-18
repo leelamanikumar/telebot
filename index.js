@@ -4,21 +4,16 @@ const mongoose = require('mongoose');
 const express = require('express');
 require('dotenv').config();
 
-// Debug environment variables
-console.log('Environment variables loaded:', {
-  botToken: !!process.env.BOT_TOKEN,
-  mongoUri: !!process.env.MONGODB_URI,
-  adminId: !!process.env.ADMIN_ID
-});
-console.log('Raw MONGODB_URI:', process.env.MONGODB_URI);
-
 // Create Express app
 const app = express();
-const port = process.env.PORT || 3872;
+const port = process.env.PORT || 3000;
 
 // Use environment variables
-const token = '7890912358:AAEgnFPly9JMmK6zf45O9zDPYFvz2pTlnu8';
-// Configure bot settings based on environment
+const token = process.env.BOT_TOKEN;
+const mongoUri = process.env.MONGODB_URI;
+const adminId = process.env.ADMIN_ID;
+
+// Configure bot settings
 const bot = new TelegramBot(token, { 
   webHook: {
     port: port
@@ -27,16 +22,12 @@ const bot = new TelegramBot(token, {
 
 // Set webhook URL for production
 if (process.env.NODE_ENV === 'production') {
-  const url = process.env.APP_URL || 'https://your-app-name.onrender.com';
+  const url = process.env.APP_URL;
   bot.setWebHook(`${url}/bot${token}`);
 }
 
-// Debug logs
-console.log('Attempting to connect to MongoDB...');
-console.log('MongoDB URI exists:', !!process.env.MONGODB_URI);
-
 // Connect to MongoDB with error handling
-mongoose.connect("mongodb+srv://lmkleela1:Yl%40cm180@cluster11.2vlki.mongodb.net/myDatabase?retryWrites=true&w=majority", {
+mongoose.connect(mongoUri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
@@ -54,9 +45,6 @@ const fileSchema = new mongoose.Schema({
 });
 
 const File = mongoose.model('File', fileSchema);
-
-// Use environment variable for admin ID
-const adminId = 5616180144;
 
 // Upload file command (only for admin)
 bot.on('message', async (msg) => {
