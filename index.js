@@ -1,16 +1,50 @@
 // Import required packages
 const TelegramBot = require('node-telegram-bot-api');
 const mongoose = require('mongoose');
+const express = require('express');
 require('dotenv').config();
 
-// Use environment variables
-const token = process.env.BOT_TOKEN;
-const bot = new TelegramBot(token, { polling: true });
+// Debug environment variables
+console.log('Environment variables loaded:', {
+  botToken: !!process.env.BOT_TOKEN,
+  mongoUri: !!process.env.MONGODB_URI,
+  adminId: !!process.env.ADMIN_ID
+});
+console.log('Raw MONGODB_URI:', process.env.MONGODB_URI);
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
+// Create Express app
+const app = express();
+const port = process.env.PORT || 3872;
+
+// Use environment variables
+const token = '7890912358:AAEgnFPly9JMmK6zf45O9zDPYFvz2pTlnu8';
+// Configure bot settings based on environment
+const bot = new TelegramBot(token, { 
+  webHook: {
+    port: port
+  }
+});
+
+// Set webhook URL for production
+if (process.env.NODE_ENV === 'production') {
+  const url = process.env.APP_URL || 'https://your-app-name.onrender.com';
+  bot.setWebHook(`${url}/bot${token}`);
+}
+
+// Debug logs
+console.log('Attempting to connect to MongoDB...');
+console.log('MongoDB URI exists:', !!process.env.MONGODB_URI);
+
+// Connect to MongoDB with error handling
+mongoose.connect("mongodb+srv://lmkleela1:Yl%40cm180@cluster11.2vlki.mongodb.net/myDatabase?retryWrites=true&w=majority", {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+})
+.then(() => {
+  console.log('Successfully connected to MongoDB.');
+})
+.catch((error) => {
+  console.error('MongoDB connection error:', error);
 });
 
 // Define file schema
@@ -22,7 +56,7 @@ const fileSchema = new mongoose.Schema({
 const File = mongoose.model('File', fileSchema);
 
 // Use environment variable for admin ID
-const adminId = process.env.ADMIN_ID;
+const adminId = 5616180144;
 
 // Upload file command (only for admin)
 bot.on('message', async (msg) => {
@@ -59,4 +93,12 @@ bot.onText(/\/start/, async (msg) => {
   }
 });
 
-console.log('Bot is running...');
+// Add basic route for health check
+app.get('/', (req, res) => {
+  res.send('Bot is running!');
+});
+
+// Start Express server
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
