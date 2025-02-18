@@ -23,6 +23,13 @@ const webhookUrl = `${appUrl}/bot${token}`;
 bot.setWebHook(webhookUrl);
 console.log(`Webhook set to: ${webhookUrl}`);
 
+app.use(express.json()); // Ensure Express parses JSON requests
+
+// Webhook route to receive Telegram updates
+app.post(`/bot${token}`, (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200); // Respond to Telegram that we received the update
+});
 
 
 // Connect to MongoDB with error handling
