@@ -14,22 +14,15 @@ const mongoUri = process.env.MONGODB_URI;
 const adminId = process.env.ADMIN_ID;
 
 // Configure bot settings
-const bot = new TelegramBot(token, { 
-  webHook: {
-    port: port
-  }
-});
+const bot = new TelegramBot(token);
+
 
 // Set webhook URL for production
-const url = process.env.APP_URL.replace(/\/$/, ''); // Remove trailing slash if present
+const webhookUrl = process.env.APP_URL.replace(/\/$/, ''); // Remove trailing slash if present
 bot.setWebHook(`${url}/webhook/${token}`);
-console.log(`Webhook set to: ${url}/webhook/${token}`);
 
-// Add webhook endpoint
-app.post(`/webhook/${token}`, (req, res) => {
-  bot.handleUpdate(req.body);
-  res.sendStatus(200);
-});
+console.log(`Webhook set to: ${webhookUrl}`);
+
 
 // Connect to MongoDB with error handling
 mongoose.connect(mongoUri, {
