@@ -14,14 +14,22 @@ const mongoUri = process.env.MONGODB_URI;
 const adminId = process.env.ADMIN_ID;
 
 // Configure bot settings
-const bot = new TelegramBot(token);
-
+const bot = new TelegramBot(token, { 
+  webHook: {
+    port: port
+  }
+});
 
 // Set webhook URL for production
-const webhookUrl = `${process.env.APP_URL}/bot${token}`;
-bot.setWebHook(webhookUrl);
-console.log(`Webhook set to: ${webhookUrl}`);
+const url = process.env.APP_URL.replace(/\/$/, ''); // Remove trailing slash if present
+bot.setWebHook(`${url}/webhook/${token}`);
+console.log(`Webhook set to: ${url}/webhook/${token}`);
 
+// Add webhook endpoint
+app.post(`/webhook/${token}`, (req, res) => {
+  bot.handleUpdate(req.body);
+  res.sendStatus(200);
+});
 
 // Connect to MongoDB with error handling
 mongoose.connect(mongoUri, {
@@ -47,34 +55,53 @@ const File = mongoose.model('File', fileSchema);
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
 
-  if (chatId.toString() === adminId && msg.document) {
-    const fileName = msg.caption || msg.document.file_name;
-    const fileId = msg.document.file_id;
+  try {
+    if (chatId.toString() === adminId && msg.document) {
+      const fileName = msg.caption || msg.document.file_name;
+      const fileId = msg.document.file_id;
 
-    // Save file details to MongoDB
-    const newFile = new File({ name: fileName, file_id: fileId });
-    await newFile.save();
+      // Log the received file details
+      console.log('Received file:', {
+        fileName,
+        fileId,
+        fromUser: chatId
+      });
 
-    bot.sendMessage(chatId, `File "${fileName}" uploaded and saved.`);
-  } else if (msg.document) {
-    bot.sendMessage(chatId, 'You are not authorized to upload files.');
+      // Save file details to MongoDB
+      const newFile = new File({ name: fileName, file_id: fileId });
+      await newFile.save();
+
+      // Send confirmation message
+      await bot.sendMessage(chatId, `File "${fileName}" uploaded and saved.`);
+    } else if (msg.document) {
+      await bot.sendMessage(chatId, 'You are not authorized to upload files.');
+    }
+  } catch (error) {
+    console.error('Error handling message:', error);
+    await bot.sendMessage(chatId, 'Sorry, there was an error processing your request.');
   }
 });
 
-// Start command - Auto download for users
+// Start command with error handling
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
-  const query = msg.text.split(' ')[1]; // Expecting /start <file_name>
+  
+  try {
+    const query = msg.text.split(' ')[1]; // Expecting /start <file_name>
 
-  if (query) {
-    const file = await File.findOne({ name: query });
-    if (file) {
-      bot.sendDocument(chatId, file.file_id);
+    if (query) {
+      const file = await File.findOne({ name: query });
+      if (file) {
+        await bot.sendDocument(chatId, file.file_id);
+      } else {
+        await bot.sendMessage(chatId, `File "${query}" not found.`);
+      }
     } else {
-      bot.sendMessage(chatId, `File "${query}" not found.`);
+      await bot.sendMessage(chatId, 'Welcome! Provide a file name to download automatically.');
     }
-  } else {
-    bot.sendMessage(chatId, 'Welcome! Provide a file name to download automatically.');
+  } catch (error) {
+    console.error('Error handling /start command:', error);
+    await bot.sendMessage(chatId, 'Sorry, there was an error processing your request.');
   }
 });
 
