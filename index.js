@@ -18,10 +18,11 @@ const bot = new TelegramBot(token);
 
 
 // Set webhook URL for production
-const webhookUrl = process.env.APP_URL.replace(/\/$/, ''); // Remove trailing slash if present
-bot.setWebHook(`${url}/webhook/${token}`);
-
+const appUrl = process.env.APP_URL.replace(/\/$/, ''); // Remove trailing slash
+const webhookUrl = `${appUrl}/bot${token}`;
+bot.setWebHook(webhookUrl);
 console.log(`Webhook set to: ${webhookUrl}`);
+
 
 
 // Connect to MongoDB with error handling
